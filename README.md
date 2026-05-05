@@ -46,8 +46,8 @@ GOOGLE_API_KEY=your_google_api_key
 UPSTASH_VECTOR_REST_URL=your_upstash_url
 UPSTASH_VECTOR_REST_TOKEN=your_upstash_token
 ```
-1.Go to aistudio.google.com → Sign in with Google → Click "Get API Key" → Create API key → Copy it
-2.Go to upstash.com → Sign up free → Go to Vector → Create Index → Name: sahayak → Dimensions: 1536 → Metric: Cosine → Copy the REST URL and REST Token
+1. Go to aistudio.google.com → Sign in with Google → Click "Get API Key" → Create API key → Copy it
+2. Go to upstash.com → Sign up free → Go to Vector → Create Index → Name: sahayak → Dimensions: 1536 → Metric: Cosine → Copy the REST URL and REST Token
 ---
 
 ### 🐍 Terminal 1 — Run Chatbot Service
