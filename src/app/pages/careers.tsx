@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Chatbot } from "../components/chatbot";
+import Chatbot from "../components/chatbot";
 import { VoiceNavigation } from "../components/voice-navigation";
 import { Navbar } from "../components/navbar";
 import { Input } from "../components/ui/input";

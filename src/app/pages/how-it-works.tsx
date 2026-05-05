@@ -1,5 +1,5 @@
 import { Navbar } from "../components/navbar";
-import { Chatbot } from "../components/chatbot";
+import Chatbot from "../components/chatbot";
 import { VoiceNavigation } from "../components/voice-navigation";
 import { UserPlus, Search, MousePointerClick, CheckCircle } from "lucide-react";
 

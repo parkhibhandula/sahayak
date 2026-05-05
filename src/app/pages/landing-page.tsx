@@ -1,5 +1,5 @@
 import { Navbar } from "../components/navbar";
-import { Chatbot } from "../components/chatbot";
+import Chatbot from "../components/chatbot";
 import { VoiceNavigation } from "../components/voice-navigation";
 import { Button } from "../components/ui/button";
 import { useNavigate } from "react-router";

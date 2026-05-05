@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { Chatbot } from "../components/chatbot";
+import  Chatbot  from "../components/chatbot";
 import { VoiceNavigation } from "../components/voice-navigation";
 import { AccessibilityControls } from "../components/accessibility-controls";
 import { useAuth } from "../contexts/auth-context";

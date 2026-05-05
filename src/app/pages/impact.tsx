@@ -1,5 +1,5 @@
 import { Navbar } from "../components/navbar";
-import { Chatbot } from "../components/chatbot";
+import Chatbot from "../components/chatbot";
 import { VoiceNavigation } from "../components/voice-navigation";
 import { Users, MapPin, Heart, TrendingUp, Award, Globe } from "lucide-react";
 
