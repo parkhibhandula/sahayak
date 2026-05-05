@@ -10,6 +10,7 @@ import { Impact } from "./pages/impact";
 import { CaretakerRegistration } from "./pages/caretaker-registration";
 import { Community } from "./pages/community";
 
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -51,4 +52,5 @@ export const router = createBrowserRouter([
     path: "/caretaker-registration",
     Component: CaretakerRegistration,
   },
+  
 ]);
