@@ -45,8 +45,8 @@ export function VoiceNavigation() {
       navigate("/dashboard");
     } else if (command.includes("map") || command.includes("accessibility")) {
       navigate("/accessibility-map");
-    } else if (command.includes("travel") || command.includes("booking") || command.includes("assistant")) {
-      navigate("/travel-booking");
+    } else if (command.includes("travel") || command.includes("booking") || command.includes("assistant") || command.includes("caretaker")) {
+      navigate("/caretaker-booking");
     } else if (command.includes("community")) {
       navigate("/community");
     } else if (command.includes("career") || command.includes("job")) {

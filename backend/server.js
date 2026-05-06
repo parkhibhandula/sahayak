@@ -6,6 +6,8 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/authRoutes.js';
+import travelRoutes from './routes/travelRoutes.js';
+import rideRoutes from './routes/rideRoutes.js';
 
 dotenv.config();
 
@@ -43,6 +45,9 @@ mongoose
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/bookings', travelRoutes);
+app.use('/api/travel', travelRoutes);
+app.use('/api/rides', rideRoutes);
 
 // File upload route
 app.post('/api/upload', upload.single('profileImage'), (req, res) => {

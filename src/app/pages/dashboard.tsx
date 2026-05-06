@@ -55,7 +55,7 @@ const features = [
     description: "Find and hire verified caretakers for elderly and specially-abled care",
     icon: UserPlus,
     gradient: "from-indigo-500 to-indigo-600",
-    path: "/travel-booking",
+    path: "/caretaker-booking",
   },
 ];
 

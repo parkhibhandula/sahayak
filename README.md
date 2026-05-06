@@ -1,3 +1,6 @@
+netstat -ano | findstr :5000
+taskkill /PID 25904 /F
+
 PART-1
   # Sahayak (Accessibility Support Platform)
 

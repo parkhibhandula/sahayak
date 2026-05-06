@@ -8,332 +8,363 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import {
   ArrowLeft,
-  Search,
-  Star,
   MapPin,
-  Clock,
+  Navigation,
+  Car,
+  Accessibility,
   Phone,
-  Mail,
-  Filter,
+  CreditCard,
+  CheckCircle,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Label } from "../components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { useAccessibility } from "../contexts/accessibility-context";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { useAuth } from "../contexts/auth-context";
+import { toast } from "sonner";
 
-const specializations = [
-  "travel assistant",
-  "Mobility Support",
-  "Elderly Care",
-  "Rehabilitation",
-  "Physical Therapy",
-  "Daily Activities",
-  "Companionship"
-];
+interface RideBooking {
+  _id: string;
+  pickupLocation: { address: string };
+  destination: { address: string };
+  rideType: string;
+  fare: { total: number; distance?: number; duration?: number };
+  status: string;
+  driverId?: { name: string; phone: string; rating: number };
+  vehicle?: { model: string; number: string; color: string };
+  createdAt: string;
+}
 
 export function TravelBooking() {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterSpecialization, setFilterSpecialization] = useState("all");
+  const { user } = useAuth();
   const [showBookingDialog, setShowBookingDialog] = useState(false);
-  const [selectedAssistant, setSelectedAssistant] = useState<any>(null);
-  const [caretakers, setCaretakers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { speakText, textToSpeech } = useAccessibility();
+  const [bookingData, setBookingData] = useState({
+    pickupLocation: "",
+    destination: "",
+    rideType: "economy",
+    specialRequirements: [] as string[],
+    emergencyContact: user?.phone || "",
+  });
+  const [fareEstimate, setFareEstimate] = useState<{
+    baseFare: number;
+    distance: number;
+    duration: number;
+    taxes: number;
+    total: number;
+  } | null>(null);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [currentBooking, setCurrentBooking] = useState<RideBooking | null>(null);
+  const { speakText } = useAccessibility();
 
   useEffect(() => {
-    fetchCaretakers();
-  }, []);
+    if (bookingData.pickupLocation && bookingData.destination) {
+      getFareEstimate();
+    }
+  }, [bookingData.pickupLocation, bookingData.destination, bookingData.rideType]);
 
-  const fetchCaretakers = async () => {
+  const getFareEstimate = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/caretakers');
+      const response = await fetch(
+        `http://localhost:5000/api/rides/fare-estimate?pickup=${encodeURIComponent(bookingData.pickupLocation)}&destination=${encodeURIComponent(bookingData.destination)}&rideType=${bookingData.rideType}`
+      );
       const data = await response.json();
       if (data.success) {
-        // Transform the data to match the expected format
-        const transformedCaretakers = data.caretakers.map((caretaker: any, index: number) => ({
-          id: caretaker._id || index + 1,
-          name: caretaker.name,
-          experience: `${caretaker.yearsOfExperience} years`,
-          rating: 4.5 + Math.random() * 0.5, // Mock rating for now
-          reviews: Math.floor(Math.random() * 200) + 50, // Mock reviews
-          specialization: caretaker.specialization,
-          location: caretaker.location,
-          availability: caretaker.availability === 'full-time' ? 'Full-time' : 'Part-time',
-          hourlyRate: `₹${caretaker.hourlyRate}/hour`,
-          image: caretaker.profileImage || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
-        }));
-        setCaretakers(transformedCaretakers);
+        setFareEstimate(data.estimate);
       }
     } catch (error) {
-      console.error('Error fetching caretakers:', error);
-      // Fallback to mock data if API fails
-      setCaretakers([
-        {
-          id: 1,
-          name: "Priya Sharma",
-          experience: "5 years",
-          rating: 4.8,
-          reviews: 124,
-          specialization: ["Elderly Care", "Medical Support"],
-          location: "Delhi",
-          availability: "Full-time",
-          hourlyRate: "₹300/hour",
-          image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400",
+      console.error('Error getting fare estimate:', error);
+    }
+  };
+
+  const handleBooking = async () => {
+    if (!user) {
+      toast.error("Please login to book a ride");
+      navigate("/login");
+      return;
+    }
+
+    if (!bookingData.pickupLocation || !bookingData.destination || !fareEstimate) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    setBookingLoading(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/rides/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        {
-          id: 2,
-          name: "Rajesh Kumar",
-          experience: "8 years",
-          rating: 4.9,
-          reviews: 203,
-          specialization: ["Travel Assistant", "Mobility Support"],
-          location: "Mumbai",
-          availability: "Part-time",
-          hourlyRate: "₹350/hour",
-          image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
-        },
-        {
-          id: 3,
-          name: "Anita Desai",
-          experience: "3 years",
-          rating: 4.7,
-          reviews: 89,
-          specialization: ["Companionship", "Daily Activities"],
-          location: "Bangalore",
-          availability: "Full-time",
-          hourlyRate: "₹280/hour",
-          image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
-        },
-        {
-          id: 4,
-          name: "Vikram Singh",
-          experience: "6 years",
-          rating: 4.8,
-          reviews: 156,
-          specialization: ["Physical Therapy", "Rehabilitation"],
-          location: "Pune",
-          availability: "Full-time",
-          hourlyRate: "₹400/hour",
-          image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
-        },
-      ]);
+        body: JSON.stringify({
+          pickupLocation: { address: bookingData.pickupLocation },
+          destination: { address: bookingData.destination },
+          rideType: bookingData.rideType,
+          specialRequirements: bookingData.specialRequirements,
+          emergencyContact: bookingData.emergencyContact,
+          fare: fareEstimate,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setCurrentBooking(data.booking);
+        setShowBookingDialog(false);
+        toast.success("Ride booked successfully!");
+        speakText("Ride booked successfully. Finding your driver.");
+      } else {
+        toast.error(data.message || "Booking failed");
+      }
+    } catch (error) {
+      console.error('Booking error:', error);
+      toast.error("Booking failed. Please try again.");
     } finally {
-      setLoading(false);
+      setBookingLoading(false);
     }
   };
 
-  const handleMouseEnter = (text: string) => {
-    if (textToSpeech) {
-      speakText(text);
-    }
-  };
-
-  const handleBookNow = (assistant: any) => {
-    setSelectedAssistant(assistant);
-    setShowBookingDialog(true);
-  };
-
-  const handleBookingSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setShowBookingDialog(false);
-    // Show verification dialog
-    alert("To complete this booking, please verify your role and provide additional details.");
-  };
-
-  const filteredAssistants = caretakers.filter((assistant) => {
-    const matchesSearch = assistant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      assistant.specialization.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesFilter = filterSpecialization === "all" || 
-      assistant.specialization.some((s: string) => s === filterSpecialization);
-    return matchesSearch && matchesFilter;
-  });
+  const rideTypeOptions = [
+    { value: "economy", label: "Economy", description: "Affordable & Comfortable", icon: Car },
+    { value: "premium", label: "Premium", description: "Extra Space & Comfort", icon: Car },
+    { value: "wheelchair", label: "Wheelchair", description: "Accessible Vehicle", icon: Accessibility },
+  ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Chatbot />
+    <div className="min-h-screen bg-gray-50">
+      <AccessibilityControls />
       <VoiceNavigation />
+      <Chatbot />
 
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white border-b border-border">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate("/dashboard")}
-                onMouseEnter={() => handleMouseEnter("Back to dashboard")}
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div>
-                <h1 className="text-xl font-semibold">Travel & Assistant Booking</h1>
-                <p className="text-xs text-muted-foreground">Find and book professional assistants</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
               <Button
-                variant="outline"
-                onClick={() => navigate("/caretaker-registration")}
-                onMouseEnter={() => handleMouseEnter("Register as a caretaker")}
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(-1)}
+                className="mr-4"
               >
-                Register as Caretaker
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
               </Button>
-              <AccessibilityControls />
+              <h1 className="text-2xl font-bold text-gray-900">Travel Sahayak</h1>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="px-6 py-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Filters */}
-          <div className="flex flex-col md:flex-row gap-4 mb-8">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search by name or specialization..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={filterSpecialization} onValueChange={setFilterSpecialization}>
-              <SelectTrigger className="w-full md:w-64">
-                <SelectValue placeholder="Filter by specialization" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Specializations</SelectItem>
-                <SelectItem value="Elderly Care">Elderly Care</SelectItem>
-                <SelectItem value="Medical Support">Medical Support</SelectItem>
-                <SelectItem value="Travel Assistant">Travel Assistant</SelectItem>
-                <SelectItem value="Mobility Support">Mobility Support</SelectItem>
-                <SelectItem value="Companionship">Companionship</SelectItem>
-              </SelectContent>
-            </Select>
+      {/* Main Content */}
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">🙏 Namaste!</h2>
+            <p className="text-lg text-gray-600">Aapki safe journey humare liye important hai</p>
           </div>
 
-          {/* Assistant Cards */}
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading caretakers...</p>
+          {/* Booking Form */}
+          <div className="space-y-6">
+            {/* Pickup Location */}
+            <div>
+              <Label htmlFor="pickup" className="text-base font-medium">
+                <MapPin className="h-4 w-4 inline mr-2" />
+                Pickup Location (Kahaan se)
+              </Label>
+              <Input
+                id="pickup"
+                placeholder="Enter pickup address"
+                value={bookingData.pickupLocation}
+                onChange={(e) => setBookingData(prev => ({ ...prev, pickupLocation: e.target.value }))}
+                className="mt-2"
+              />
+            </div>
+
+            {/* Destination */}
+            <div>
+              <Label htmlFor="destination" className="text-base font-medium">
+                <Navigation className="h-4 w-4 inline mr-2" />
+                Destination (Kahaan jaana hai)
+              </Label>
+              <Input
+                id="destination"
+                placeholder="Enter destination address"
+                value={bookingData.destination}
+                onChange={(e) => setBookingData(prev => ({ ...prev, destination: e.target.value }))}
+                className="mt-2"
+              />
+            </div>
+
+            {/* Ride Type */}
+            <div>
+              <Label className="text-base font-medium">
+                <Car className="h-4 w-4 inline mr-2" />
+                Ride Type (Kaisi gaadi chahiye)
+              </Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                {rideTypeOptions.map((option) => {
+                  const Icon = option.icon;
+                  return (
+                    <div
+                      key={option.value}
+                      className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                        bookingData.rideType === option.value
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                      onClick={() => setBookingData(prev => ({ ...prev, rideType: option.value }))}
+                    >
+                      <div className="flex items-center">
+                        <Icon className="h-5 w-5 mr-2" />
+                        <div>
+                          <div className="font-medium">{option.label}</div>
+                          <div className="text-sm text-gray-600">{option.description}</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAssistants.map((assistant) => (
-                <div
-                  key={assistant.id}
-                  className="bg-white rounded-2xl border border-border overflow-hidden hover:shadow-xl transition-all duration-300"
-                  onMouseEnter={() => handleMouseEnter(`${assistant.name}, ${assistant.experience} experience, rated ${assistant.rating} stars`)}
-                >
-                  <div className="h-48 bg-gradient-to-br from-primary/10 to-secondary/10 overflow-hidden">
-                    <ImageWithFallback
-                      src={assistant.image}
-                      alt={assistant.name}
-                      className="w-full h-full object-cover"
-                    />
+
+            {/* Special Requirements */}
+            <div>
+              <Label className="text-base font-medium">Special Requirements (Optional)</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {[
+                  { value: "assistance", label: "Door-to-door assistance chahiye" },
+                  { value: "luggage", label: "Luggage help chahiye" },
+                  { value: "medical", label: "Medical equipment hai" },
+                ].map((req) => (
+                  <Badge
+                    key={req.value}
+                    variant={bookingData.specialRequirements.includes(req.value) ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => {
+                      setBookingData(prev => ({
+                        ...prev,
+                        specialRequirements: prev.specialRequirements.includes(req.value)
+                          ? prev.specialRequirements.filter(r => r !== req.value)
+                          : [...prev.specialRequirements, req.value]
+                      }));
+                    }}
+                  >
+                    {req.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* Emergency Contact */}
+            <div>
+              <Label htmlFor="emergency" className="text-base font-medium">
+                <Phone className="h-4 w-4 inline mr-2" />
+                Emergency Contact (Family member ka number)
+              </Label>
+              <Input
+                id="emergency"
+                type="tel"
+                placeholder="10-digit mobile number"
+                value={bookingData.emergencyContact}
+                onChange={(e) => setBookingData(prev => ({ ...prev, emergencyContact: e.target.value }))}
+                className="mt-2"
+              />
+            </div>
+
+            {/* Fare Estimate */}
+            {fareEstimate && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-medium mb-2">Estimated Fare</h3>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>Distance</span>
+                    <span>{fareEstimate.distance} km</span>
                   </div>
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="font-semibold text-lg">{assistant.name}</h3>
-                        <p className="text-sm text-muted-foreground">{assistant.experience} experience</p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-accent text-accent" />
-                        <span className="font-semibold">{assistant.rating.toFixed(1)}</span>
-                        <span className="text-xs text-muted-foreground">({assistant.reviews})</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MapPin className="w-4 h-4" />
-                        {assistant.location}
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="w-4 h-4" />
-                        {assistant.availability}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {assistant.specialization.map((spec: string, idx: number) => (
-                        <Badge key={idx} variant="secondary" className="text-xs">
-                          {spec}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center justify-between pt-4 border-t border-border">
-                      <div>
-                        <div className="text-xs text-muted-foreground">Hourly Rate</div>
-                        <div className="font-semibold text-lg text-primary">{assistant.hourlyRate}</div>
-                      </div>
-                      <Button 
-                        onClick={() => handleBookNow(assistant)}
-                        className="bg-primary hover:bg-primary/90"
-                      >
-                        Book Now
-                      </Button>
-                    </div>
+                  <div className="flex justify-between">
+                    <span>Duration</span>
+                    <span>{fareEstimate.duration} mins</span>
+                  </div>
+                  <div className="flex justify-between font-medium">
+                    <span>Total</span>
+                    <span>₹{fareEstimate.total}</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            )}
+
+            {/* Book Button */}
+            <Button
+              onClick={() => setShowBookingDialog(true)}
+              className="w-full py-3 text-lg"
+              disabled={!bookingData.pickupLocation || !bookingData.destination || !fareEstimate}
+            >
+              <CheckCircle className="h-5 w-5 mr-2" />
+              Book Ride Now
+            </Button>
+          </div>
         </div>
+
+        {/* Current Booking Status */}
+        {currentBooking && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
+            <h3 className="text-lg font-medium mb-4">Current Ride</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span>Status</span>
+                <Badge variant={currentBooking.status === 'searching' ? 'secondary' : 'default'}>
+                  {currentBooking.status}
+                </Badge>
+              </div>
+              <div className="flex justify-between">
+                <span>From</span>
+                <span>{currentBooking.pickupLocation.address}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>To</span>
+                <span>{currentBooking.destination.address}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Fare</span>
+                <span>₹{currentBooking.fare.total}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
-      {/* Booking Dialog */}
+      {/* Booking Confirmation Dialog */}
       <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Book {selectedAssistant?.name}</DialogTitle>
+            <DialogTitle>Confirm Ride Booking</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleBookingSubmit} className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="service-type">Service Type</Label>
-              <Select required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select service type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="travel">Travel Assistance</SelectItem>
-                  <SelectItem value="daily">Daily Care</SelectItem>
-                  <SelectItem value="medical">Medical Support</SelectItem>
-                  <SelectItem value="companionship">Companionship</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-600">Please confirm your ride details:</p>
+              <div className="mt-2 space-y-1">
+                <p><strong>From:</strong> {bookingData.pickupLocation}</p>
+                <p><strong>To:</strong> {bookingData.destination}</p>
+                <p><strong>Type:</strong> {rideTypeOptions.find(t => t.value === bookingData.rideType)?.label}</p>
+                <p><strong>Fare:</strong> ₹{fareEstimate?.total}</p>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="booking-date">Preferred Date</Label>
-              <Input id="booking-date" type="date" required />
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowBookingDialog(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleBooking}
+                disabled={bookingLoading}
+                className="flex-1"
+              >
+                {bookingLoading ? "Booking..." : "Confirm Booking"}
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="duration">Duration (hours)</Label>
-              <Input id="duration" type="number" min="1" placeholder="Enter hours" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contact-number">Contact Number</Label>
-              <Input id="contact-number" type="tel" placeholder="Enter your phone number" required />
-            </div>
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm text-amber-900">
-                <strong>Note:</strong> You'll be asked to verify your profile and provide additional 
-                information before completing this booking.
-              </p>
-            </div>
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
-              Proceed to Verification
-            </Button>
-          </form>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
